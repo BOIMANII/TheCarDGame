@@ -31,7 +31,7 @@ public class BotInitializer extends ListenerAdapter {
 
             }
 
-            String botToken = "MTM1OTE1NjI0Njg5MTk5MTI4Mw.GH9URH.TL1LAMNfWHuIVI4NHVnclN0yFAvbXe05plUuFw";
+            String botToken = "BOTTOKEN";
 
             JDABuilder builder = JDABuilder.createDefault(botToken)
                     .enableIntents(GatewayIntent.MESSAGE_CONTENT);
@@ -72,7 +72,7 @@ public class BotInitializer extends ListenerAdapter {
     @Override
 
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        Random rng = new Random();
+        
         String[] cars = "Corolla, Civic, Sentra, Altima, Camry, Accord, Elantra, Fusion, Cruze, Mazda3, Impreza, Lancer, 370Z, G35, Sienna, Odyssey, Sportage, Rogue, Murano, Eclipse Cross, Crosstrek, Forester,  Lancer Evolution, WRX STI, Civic Type R, GR Corolla, GR86, Mustang GT, MX5 Miata, Camaro, 370Z Nismo, Challenger Scat Pack, Charger Scat Pack, S5, Ioniq 5 N, Supra MK5, I8, X3,  X5, Macan, Cayenne, GL350, M3, C63 AMG, C43 AMG, M4, GTR, AMG GTS, Emira, Evora, Mustang Dark Horse, M5, 718 Cayman, 718 Boxster, Cayman GT4 RS, Boxster Spyder RS, Gallardo, R8 V8, AMG GTR, 911 Carerra, M5 Competition, S63 AMG, R8 V10, Huracan, 570S, 600 LT, 911 GT3, 296 GTB, 458 Italia, 488 GTB, GTR Nismo, Viper ACR, 720S, AMG GT Black Series, SLR Mclaren, SF90 Stradale, Aventador, F8 Tributo, 911 GT3 RS, Huracan STO, Revuelto, Senna, Aventador SV, 812 Competizione, P1, Laferrari, 918 Spyder, Veyron 16.4, Agera, Huayra"
                 .split(", ");
         String[] top = "190, 200, 190, 210, 207, 200, 200, 205, 200, 200, 185, 195, 195, 195, 195, 195, 185, 195, 250, 255, 270, 250, 250, 255, 250, 280, 280, 250, 250, 250, 250, 280, 270, 280, 290, 250, 325, 310, 290, 280, 280, 315, 308, 325, 318, 293, 314, 320, 330, 330, 328, 318, 325, 330, 330, 290, 341, 334, 325, 350, 340, 340, 296, 310, 325, 335, 350, 340, 350, 350, 350, 407, 440, 385"
@@ -85,7 +85,7 @@ public class BotInitializer extends ListenerAdapter {
             // Handle the /deck command
 
             // Loop through cars and build embed messages
-            for (int i = 0; i < cars.length; i++) {
+            for (int i = 0; i < own.length; i++) {
                 if (own[i] == 1) {
                     int level = 0;
                     EmbedBuilder embed = new EmbedBuilder();
@@ -131,38 +131,44 @@ public class BotInitializer extends ListenerAdapter {
         }
         if (event.getName().equals("play")) {
             int repeat = event.getOption("number").getAsInt();
-
-            StringBuilder responseBuilder = new StringBuilder(); // Collect all responses
-
+        
+            // Check bounds to prevent ArrayIndexOutOfBoundsException
+            if (repeat > own.length || repeat > cars.length) {
+                event.reply("The number you entered exceeds the available cars. Please try again with a smaller number.")
+                     .setEphemeral(true)
+                     .queue();
+                return;
+            }
+        
+            // Defer reply to prevent timeout
+            event.deferReply().setEphemeral(true).queue();
+        
+            Random rng = new Random(); // Initialize RNG
+        
             for (int i = 0; i < repeat; i++) {
-                event.deferReply().setEphemeral(true).queue();
                 int loop = 0;
                 int roll = 0;
                 do {
-                    roll = 0;
                     roll = rng.nextInt(66); // Generate a random number between 0 and 65
-
                     if (roll > 19 || loop != -1) {
                         if (loop < 3) {
                             loop++;
                         }
                     } else {
-                        loop = -1;
+                        loop = -1; // Exit condition
                     }
                 } while (loop != -1);
-
-                // Add responses to the builder
+        
+                // Send response for each iteration to reduce memory overhead
                 if (own[i] != 1) {
-                    own[i] = 1;
-                    responseBuilder.append("You rolled a ").append(i).append(" and received a ").append(cars[i]).append("!\n");
+                    own[i] = 1; // Mark the car as owned
+                    event.getHook().sendMessage("You rolled a " + i + " and received a " + cars[i] + "!").queue();
                 } else {
-                    responseBuilder.append("You rolled a ").append(i).append(", but you already have this car.\n");
+                    event.getHook().sendMessage("You rolled a " + i + ", but you already have this car.").queue();
                 }
             }
-
-            // Send the collected responses in one reply
-            event.getHook().sendMessage(responseBuilder.toString()).queue();
         }
+        
     }
 }
 
